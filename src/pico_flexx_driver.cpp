@@ -858,9 +858,9 @@ private:
     msgCloud->width = data.width;
     msgCloud->is_bigendian = false;
     msgCloud->is_dense = false;
-    msgCloud->point_step = (uint32_t)(4 * sizeof(float) + sizeof(u_int16_t) + sizeof(u_int8_t));
+    msgCloud->point_step = (uint32_t)(4 * sizeof(float) + sizeof(u_int16_t) + 2 * sizeof(u_int8_t));
     msgCloud->row_step = (uint32_t)(msgCloud->point_step * data.width);
-    msgCloud->fields.resize(6);
+    msgCloud->fields.resize(7);
     msgCloud->fields[0].name = "x";
     msgCloud->fields[0].offset = 0;
     msgCloud->fields[0].datatype = sensor_msgs::PointField::FLOAT32;
@@ -885,6 +885,10 @@ private:
     msgCloud->fields[5].offset = msgCloud->fields[4].offset + (uint32_t)sizeof(uint16_t);
     msgCloud->fields[5].datatype = sensor_msgs::PointField::UINT8;
     msgCloud->fields[5].count = 1;
+    msgCloud->fields[6].name = "confidence";
+    msgCloud->fields[6].offset = msgCloud->fields[4].offset + (uint32_t)(sizeof(uint16_t) + sizeof(uint8_t));
+    msgCloud->fields[6].datatype = sensor_msgs::PointField::UINT8;
+    msgCloud->fields[6].count = 1;
     msgCloud->data.resize(msgCloud->point_step * data.points.size());
 
     const float invalid = std::numeric_limits<float>::quiet_NaN();
@@ -900,6 +904,7 @@ private:
       float *itCZ = itCY + 1;
       float *itCN = itCZ + 1;                    // "noise" field
       uint16_t *itCM = (uint16_t *)(itCN + 1);   // "intensity" field
+      uint8_t  *itCC = ((uint8_t *)itCM) + sizeof(uint16_t) + sizeof(uint8_t);   // "confidence" field
 
       if(itI->depthConfidence && itI->noise < maxNoise)
       {
@@ -907,6 +912,7 @@ private:
         *itCY = itI->y;
         *itCZ = itI->z;
         *itCN = itI->noise;
+        *itCC = itI->depthConfidence;
         *itD = itI->z;
         *itN = itI->noise;
       }
@@ -916,6 +922,7 @@ private:
         *itCY = invalid;
         *itCZ = invalid;
         *itCN = 0.0f;
+        *itCC = 0;
         *itD = 0.0f;
         *itN = 0.0f;
       }
